@@ -1,0 +1,58 @@
+
+These are ordered chronoligically and not by value/Magnitude
+
+1) Parse input state string
+- Read `initialStateString` into `int[] h0,d0,h1,d1` and `char turn`.
+- Validate format; handle indexes as zero-based.
+
+2) Extend `Node` structure
+- Add fields: `int[] h0,d0,h1,d1`, `char turn`, `int value`.
+- Optional: `Node parent`, `String actionFromParent` for plan reconstruction.
+- Keep `getValue()` returning `value`.
+
+3) Generate legal actions
+- Implement `actions(node)`: list `"A(i,j)"` or `"B(i,j)"` for alive attacker/target based on `turn`.
+- Use stable order: attacker index ascending, then target index ascending.
+
+4) Terminal and utility
+- Implement `isTerminal(node)`: `sum(h0)==0 || sum(h1)==0`.
+- Implement `utility(node)`: `sum(h0) - sum(h1)`.
+
+5) Apply action (result)
+- Implement `result(node, action)`: deep-copy arrays, apply damage (floor at 0), flip `turn`, set `actionFromParent`.
+
+6) Node expansion counter
+- Add `long nodesExpanded` in `BattleSolver`; reset before search.
+- Increment once per node expansion (each recursive visit).
+
+7) Implement Minimax recursion
+- `minimax(node, isMax)`: recurse until terminal; A maximizes, B minimizes.
+- Choose best child and stitch plan by prefixing chosen action.
+- Tie-break deterministically by first-best in the stable action order.
+
+8) Implement Alpha-Beta recursion
+- `alphabeta(node, alpha, beta, isMax)`: identical to minimax with pruning.
+- Prune: max if `best >= beta`; min if `best <= alpha`.
+- Maintain identical plan building and node counting.
+
+9) Wire `solve` entrypoint
+- In `BattleSolver.solve`: parse state, set `initialNode`, pick algorithm via `ab`, call search, collect best plan and score.
+- Ignore `visualize` or optionally print a tiny trace only when true.
+
+10) Format final output
+- Return `"plan;score;nodesExpanded"`.
+- Plan is hyphen-separated like `A(0,0)-B(0,0)-A(0,1)` with no trailing hyphen.
+
+11) Optional move ordering (optimization)
+- Improve AB pruning by ordering actions: for A, higher attacker damage then lowest enemy health; B symmetrical.
+- Keep it deterministic.
+
+12) Run and verify tests
+- Run the provided JUnit tests; ensure expected scores match.
+- Confirm at least one case shows Alpha-Beta expands fewer nodes than Minimax.
+
+13) Add quick usage notes
+- A minimal `README.md` with instructions to run tests (IDE JUnit, or `mvn test`/`gradle test` if applicable).
+
+14) Commit and push
+- Commit solver implementation and docs; push to your repo.
