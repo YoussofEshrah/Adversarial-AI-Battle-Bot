@@ -133,4 +133,39 @@ public class BattleSolver {
         }
     }
 
+    // Returns all legal action strings for the given node in order.
+    // Format: "A(i,j)" if node.turn=='A', else "B(i,j)".
+    // Only include attackers with health>0 and targets with health>0.
+    public static java.util.List<String> generateActions(Node node) {
+        java.util.List<String> actions = new java.util.ArrayList<>();
+        if (node == null)
+            return actions;
+        if (node.turn == 'A') {
+            if (node.h0 != null && node.h1 != null) { // h0 and h1 are the health arrays of both teams
+                for (int i = 0; i < node.h0.length; i++) {
+                    if (node.h0[i] > 0) {
+                        for (int j = 0; j < node.h1.length; j++) {
+                            if (node.h1[j] > 0) {
+                                actions.add("A(" + i + "," + j + ")");
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (node.turn == 'B') {
+            if (node.h1 != null && node.h0 != null) {
+                for (int i = 0; i < node.h1.length; i++) {
+                    if (node.h1[i] > 0) {
+                        for (int j = 0; j < node.h0.length; j++) {
+                            if (node.h0[j] > 0) {
+                                actions.add("B(" + i + "," + j + ")");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return actions; //example return will look like: ["A(0,0)", "A(0,1)", ...] - unit 0 of team A can attack unit 0 or 1 of team B and so on
+    }
+
 }
