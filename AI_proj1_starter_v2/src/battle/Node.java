@@ -3,7 +3,6 @@ package battle;
 import java.util.Arrays;
 
 public class Node {
-
     // you can add a state representation attribute or any other attributes you need
     public int value;
 

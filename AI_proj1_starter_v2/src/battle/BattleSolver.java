@@ -12,7 +12,6 @@ public class BattleSolver {
 
     }
 
-    // ========================= Step 1: Input Parser =========================
     // Parses initialStateString of the form
     // "h0_0,d0_0,h0_1,d0_1,...;h1_0,d1_0,h1_1,d1_1,...;T;"
     // where T is either 'A' or 'B'.
@@ -133,6 +132,103 @@ public class BattleSolver {
         }
     }
 
+    // Terminal when either team's total health reaches zero.
+    private static boolean isTerminal(Node node) {
+        if (node == null)
+            return true; // defensive: treat null as terminal
+        int sumA = sum(node.h0);
+        int sumB = sum(node.h1);
+        return sumA == 0 || sumB == 0;
+    }
+
+    // Utility defined as sum(A health) - sum(B health). Used at terminal states
+    // (fakart en momken law pieces 3andaha
+    // dmg aktar yeb2a leeha weight aktar ka utility bas dah mesh implied men el
+    // description awy)
+    private static int utility(Node node) {
+        if (node == null)
+            return 0;
+        return sum(node.h0) - sum(node.h1);
+    }
+
+    private static int sum(int[] a) {
+        if (a == null)
+            return 0;
+        int s = 0;
+        for (int v : a)
+            s += v;
+        return s;
+    }
+
+    // Applies an action string to a node and returns a new child node with updated
+    // state.
+    // Returns null if the action is invalid for the given node.
+    public static Node result(Node node, String action) { // action format: "A(i,j)" or "B(i,j)", Node is the current
+                                                          // state
+        if (node == null || action == null || action.length() < 5)
+            return null; // minimal len: X(0,0)
+
+        // Create a deep-copied child state
+        Node child = new Node(node);
+
+        char actor = action.charAt(0);
+        // Parse indices inside parentheses
+        int l = action.indexOf('(');
+        int r = action.lastIndexOf(')'); // beygeeb el index of the last occurunce of ')'
+        if (l < 0 || r < 0 || r <= l + 1)
+            return null;
+        String inside = action.substring(l + 1, r);
+        String[] parts = inside.split(",");
+        if (parts.length != 2)
+            return null;
+        int attackerIdx;
+        int targetIdx;
+        try {
+            attackerIdx = Integer.parseInt(parts[0].trim());
+            targetIdx = Integer.parseInt(parts[1].trim());
+        } catch (NumberFormatException nfe) {
+            return null;
+        }
+
+        if (actor == 'A') {
+            // Validate turn and indices and alive statuses
+            if (child.turn != 'A' || child.h0 == null || child.h1 == null) // check if it's A's turn and arrays are not
+                                                                           // null
+                return null;
+            if (attackerIdx < 0 || attackerIdx >= child.h0.length) // check if attacker index is valid
+                return null;
+            if (targetIdx < 0 || targetIdx >= child.h1.length) // check if target index is valid
+                return null;
+            if (child.h0[attackerIdx] <= 0 || child.h1[targetIdx] <= 0) // check if both attacker and target are alive
+                return null;
+
+            int dmg = (child.d0 != null && attackerIdx < child.d0.length) ? child.d0[attackerIdx] : 0;
+            int newHealth = child.h1[targetIdx] - dmg;
+            child.h1[targetIdx] = Math.max(0, newHealth); // health cannot go below 0
+            child.turn = 'B';
+        } else if (actor == 'B') {
+            if (child.turn != 'B' || child.h1 == null || child.h0 == null)
+                return null;
+            if (attackerIdx < 0 || attackerIdx >= child.h1.length)
+                return null;
+            if (targetIdx < 0 || targetIdx >= child.h0.length)
+                return null;
+            if (child.h1[attackerIdx] <= 0 || child.h0[targetIdx] <= 0)
+                return null;
+
+            int dmg = (child.d1 != null && attackerIdx < child.d1.length) ? child.d1[attackerIdx] : 0;
+            int newHealth = child.h0[targetIdx] - dmg;
+            child.h0[targetIdx] = Math.max(0, newHealth);
+            child.turn = 'A';
+        } else {
+            return null;
+        }
+
+        child.parent = node;
+        child.actionFromParent = action;
+        return child;
+    }
+
     // Returns all legal action strings for the given node in order.
     // Format: "A(i,j)" if node.turn=='A', else "B(i,j)".
     // Only include attackers with health>0 and targets with health>0.
@@ -165,7 +261,8 @@ public class BattleSolver {
                 }
             }
         }
-        return actions; //example return will look like: ["A(0,0)", "A(0,1)", ...] - unit 0 of team A can attack unit 0 or 1 of team B and so on
+        return actions; // example return will look like: ["A(0,0)", "A(0,1)", ...] - unit 0 of team A
+                        // can attack unit 0 or 1 of team B and so on
     }
 
 }
