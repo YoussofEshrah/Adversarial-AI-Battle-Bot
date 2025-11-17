@@ -13,7 +13,14 @@ public class BattleSolver {
         initialNode = new Node(ps.h0, ps.d0, ps.h1, ps.d1, ps.turn);
 
         resetNodesExpanded();
-        SearchResult result = minimax(initialNode, ps.turn == 'A');
+        SearchResult result;
+
+        if (ab) {
+            result = alphabeta(initialNode, Integer.MIN_VALUE, Integer.MAX_VALUE, ps.turn == 'A');
+
+        } else {
+            result = minimax(initialNode, ps.turn == 'A');
+        }
 
         String plan = result.plan.replaceAll("-", ",");
         String score = Integer.toString(result.score);
@@ -260,7 +267,8 @@ public class BattleSolver {
             String bestPlan = "";
             for (String a : actions) {
                 Node child = result(node, a);
-                if (child == null) continue;
+                if (child == null)
+                    continue;
                 SearchResult r = alphabeta(child, alpha, beta, false);
                 if (r.score > bestScore) {
                     bestScore = r.score;
@@ -278,7 +286,8 @@ public class BattleSolver {
             String bestPlan = "";
             for (String a : actions) {
                 Node child = result(node, a);
-                if (child == null) continue;
+                if (child == null)
+                    continue;
                 SearchResult r = alphabeta(child, alpha, beta, true);
                 if (r.score < bestScore) {
                     bestScore = r.score;
