@@ -241,6 +241,59 @@ public class BattleSolver {
         }
     }
 
+    // ========================= Step 8: Alpha-Beta =========================
+    private SearchResult alphabeta(Node node, int alpha, int beta, boolean isMax) {
+        // Count every node visit as an expansion
+        countExpansion();
+
+        if (isTerminal(node)) {
+            return new SearchResult(utility(node), "");
+        }
+
+        java.util.List<String> actions = generateActions(node);
+        if (actions.isEmpty()) {
+            return new SearchResult(utility(node), "");
+        }
+
+        if (isMax) {
+            int bestScore = Integer.MIN_VALUE;
+            String bestPlan = "";
+            for (String a : actions) {
+                Node child = result(node, a);
+                if (child == null) continue;
+                SearchResult r = alphabeta(child, alpha, beta, false);
+                if (r.score > bestScore) {
+                    bestScore = r.score;
+                    bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                }
+                if (bestScore >= beta) {
+                    // beta cut-off
+                    return new SearchResult(bestScore, bestPlan);
+                }
+                alpha = Math.max(alpha, bestScore);
+            }
+            return new SearchResult(bestScore, bestPlan);
+        } else {
+            int bestScore = Integer.MAX_VALUE;
+            String bestPlan = "";
+            for (String a : actions) {
+                Node child = result(node, a);
+                if (child == null) continue;
+                SearchResult r = alphabeta(child, alpha, beta, true);
+                if (r.score < bestScore) {
+                    bestScore = r.score;
+                    bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                }
+                if (bestScore <= alpha) {
+                    // alpha cut-off
+                    return new SearchResult(bestScore, bestPlan);
+                }
+                beta = Math.min(beta, bestScore);
+            }
+            return new SearchResult(bestScore, bestPlan);
+        }
+    }
+
     // Applies an action string to a node and returns a new child node with updated
     // state.
     // Returns null if the action is invalid for the given node.
