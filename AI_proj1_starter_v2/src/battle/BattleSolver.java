@@ -5,11 +5,33 @@ public class BattleSolver {
     public Node initialNode; // this attribute MUST be used to store the initial node in the search tree
     private long nodesExpanded = 0L;
 
+    // Instance variables related to visualization
+    private boolean visualize = false;
+    private int depth = 0;
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_BLUE = "\u001B[34m";
+    private static final String ANSI_PURPLE = "\u001B[35m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_WHITE = "\u001B[37m";
+    private static final String ANSI_BOLD = "\u001B[1m";
+    private static final String ANSI_BG_WHITE = "\u001B[47m";
+    private static final String ANSI_BG_BLACK = "\u001B[40m";
+
     public String solve(String initialStateString, boolean ab, boolean visualize) {
         String sol = "";
+        this.visualize = visualize;
 
         ParsedState ps = parseInitialState(initialStateString);
         initialNode = new Node(ps.h0, ps.d0, ps.h1, ps.d1, ps.turn);
+
+        if (visualize) {
+            printHeader(ab);
+            printInitialState(initialNode);
+            System.out.println();
+        }
 
         resetNodesExpanded();
         SearchResult result;
@@ -24,6 +46,10 @@ public class BattleSolver {
         String plan = result.plan.replaceAll("-", ",");
         String score = Integer.toString(result.score);
         String nodesExp = Long.toString(getNodesExpanded());
+
+        if (visualize) {
+            printFinalSummary(result, ab);
+        }
 
         sol = plan + ";" + score + ";" + nodesExp;
         return sol;
@@ -205,8 +231,16 @@ public class BattleSolver {
         // Count every node visit as an expansion
         countExpansion();
 
+        if (visualize) {
+            printNodeExploration(node, isMax, depth, "MINIMAX", Integer.MIN_VALUE, Integer.MAX_VALUE);
+        }
+
         if (isTerminal(node)) {
-            return new SearchResult(utility(node), "");
+            int util = utility(node);
+            if (visualize) {
+                printTerminalNode(node, util, depth);
+            }
+            return new SearchResult(util, "");
         }
 
         java.util.List<String> actions = generateActions(node);
@@ -219,29 +253,55 @@ public class BattleSolver {
         if (isMax) {
             int bestScore = Integer.MIN_VALUE;
             String bestPlan = "";
+            String bestAction = "";
             for (String a : actions) {
+                if (visualize) {
+                    printActionConsidered(a, depth, isMax);
+                }
                 Node child = result(node, a);
                 if (child == null)
                     continue; // should not happen with valid actions, but just in case it happens, we skip
+                depth++;
                 SearchResult r = minimax(child, false); // recursive call
+                depth--;
                 if (r.score > bestScore) {
                     bestScore = r.score;
                     bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                    bestAction = a;
                 }
+                if (visualize) {
+                    printActionResult(a, r.score, bestScore, depth, isMax);
+                }
+            }
+            if (visualize) {
+                printBestChoice(bestAction, bestScore, depth, isMax);
             }
             return new SearchResult(bestScore, bestPlan);
         } else {
             int bestScore = Integer.MAX_VALUE;
             String bestPlan = "";
+            String bestAction = "";
             for (String a : actions) {
+                if (visualize) {
+                    printActionConsidered(a, depth, isMax);
+                }
                 Node child = result(node, a);
                 if (child == null)
                     continue;
+                depth++;
                 SearchResult r = minimax(child, true);
+                depth--;
                 if (r.score < bestScore) {
                     bestScore = r.score;
                     bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                    bestAction = a;
                 }
+                if (visualize) {
+                    printActionResult(a, r.score, bestScore, depth, isMax);
+                }
+            }
+            if (visualize) {
+                printBestChoice(bestAction, bestScore, depth, isMax);
             }
             return new SearchResult(bestScore, bestPlan);
         }
@@ -252,8 +312,16 @@ public class BattleSolver {
         // Count every node visit as an expansion
         countExpansion();
 
+        if (visualize) {
+            printNodeExploration(node, isMax, depth, "ALPHA-BETA", alpha, beta);
+        }
+
         if (isTerminal(node)) {
-            return new SearchResult(utility(node), "");
+            int util = utility(node);
+            if (visualize) {
+                printTerminalNode(node, util, depth);
+            }
+            return new SearchResult(util, "");
         }
 
         java.util.List<String> actions = generateActions(node);
@@ -264,42 +332,242 @@ public class BattleSolver {
         if (isMax) {
             int bestScore = Integer.MIN_VALUE;
             String bestPlan = "";
+            String bestAction = "";
             for (String a : actions) {
+                if (visualize) {
+                    printActionConsidered(a, depth, isMax);
+                }
                 Node child = result(node, a);
                 if (child == null)
                     continue;
+                depth++;
                 SearchResult r = alphabeta(child, alpha, beta, false);
+                depth--;
                 if (r.score > bestScore) {
                     bestScore = r.score;
                     bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                    bestAction = a;
+                }
+                if (visualize) {
+                    printActionResult(a, r.score, bestScore, depth, isMax);
                 }
                 if (bestScore >= beta) {
                     // beta cut-off
+                    if (visualize) {
+                        printPruning("BETA", alpha, beta, bestScore, depth);
+                    }
                     return new SearchResult(bestScore, bestPlan);
                 }
                 alpha = Math.max(alpha, bestScore);
+                if (visualize) {
+                    printAlphaBetaUpdate("ALPHA", alpha, beta, depth);
+                }
+            }
+            if (visualize) {
+                printBestChoice(bestAction, bestScore, depth, isMax);
             }
             return new SearchResult(bestScore, bestPlan);
         } else {
             int bestScore = Integer.MAX_VALUE;
             String bestPlan = "";
+            String bestAction = "";
             for (String a : actions) {
+                if (visualize) {
+                    printActionConsidered(a, depth, isMax);
+                }
                 Node child = result(node, a);
                 if (child == null)
                     continue;
+                depth++;
                 SearchResult r = alphabeta(child, alpha, beta, true);
+                depth--;
                 if (r.score < bestScore) {
                     bestScore = r.score;
                     bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                    bestAction = a;
+                }
+                if (visualize) {
+                    printActionResult(a, r.score, bestScore, depth, isMax);
                 }
                 if (bestScore <= alpha) {
                     // alpha cut-off
+                    if (visualize) {
+                        printPruning("ALPHA", alpha, beta, bestScore, depth);
+                    }
                     return new SearchResult(bestScore, bestPlan);
                 }
                 beta = Math.min(beta, bestScore);
+                if (visualize) {
+                    printAlphaBetaUpdate("BETA", alpha, beta, depth);
+                }
+            }
+            if (visualize) {
+                printBestChoice(bestAction, bestScore, depth, isMax);
             }
             return new SearchResult(bestScore, bestPlan);
         }
+    }
+
+    // ========================= Visualization Methods =========================
+
+    private void printHeader(boolean ab) {
+        System.out.println("\n" + ANSI_BOLD + ANSI_BG_WHITE + ANSI_BLUE +
+                "===============================================================" + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_CYAN + "           BATTLE SOLVER VISUALIZATION" + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_YELLOW + "           Algorithm: " +
+                (ab ? "ALPHA-BETA PRUNING" : "MINIMAX") + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_BG_WHITE + ANSI_BLUE +
+                "===============================================================" + ANSI_RESET + "\n");
+    }
+
+    private void printInitialState(Node node) {
+        System.out.println(ANSI_BOLD + ANSI_GREEN + "+==== INITIAL STATE ====+" + ANSI_RESET);
+        printGameState(node);
+        System.out.println(ANSI_BOLD + ANSI_GREEN + "+=======================+" + ANSI_RESET);
+    }
+
+    private void printGameState(Node node) {
+        System.out.println(ANSI_BOLD + ANSI_GREEN + "  Team A: " + ANSI_RESET + formatTeam(node.h0, node.d0));
+        System.out.println(ANSI_BOLD + ANSI_RED + "  Team B: " + ANSI_RESET + formatTeam(node.h1, node.d1));
+        System.out.println(ANSI_BOLD + ANSI_YELLOW + "  Turn: " + ANSI_RESET +
+                (node.turn == 'A' ? ANSI_GREEN + "Team A" : ANSI_RED + "Team B") + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_CYAN + "  Utility: " + ANSI_RESET + utility(node));
+    }
+
+    private String formatTeam(int[] health, int[] damage) {
+        if (health == null || damage == null)
+            return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < health.length; i++) {
+            if (i > 0)
+                sb.append(", ");
+            String color = health[i] > 0 ? ANSI_WHITE : ANSI_PURPLE;
+            sb.append(color).append("(H:").append(health[i])
+                    .append(",D:").append(damage[i]).append(")").append(ANSI_RESET);
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    private void printNodeExploration(Node node, boolean isMax, int depth, String algorithm, int alpha, int beta) {
+        String indent = getIndent(depth);
+        String playerColor = isMax ? ANSI_GREEN : ANSI_RED;
+        String playerName = isMax ? "MAX (Team A)" : "MIN (Team B)";
+
+        System.out.println();
+        System.out
+                .println(indent + ANSI_BOLD + ANSI_CYAN + "+-- Exploring Node (Depth " + depth + ") --+" + ANSI_RESET);
+        System.out.println(indent + ANSI_BOLD + playerColor + "| Player: " + playerName + ANSI_RESET);
+
+        if (algorithm.equals("ALPHA-BETA")) {
+            System.out.println(indent + ANSI_BOLD + ANSI_YELLOW + "| a=" + formatValue(alpha) +
+                    ", b=" + formatValue(beta) + ANSI_RESET);
+        }
+
+        if (node.actionFromParent != null) {
+            System.out.println(indent + ANSI_BOLD + ANSI_PURPLE + "| From Action: " +
+                    formatAction(node.actionFromParent) + ANSI_RESET);
+        }
+        System.out.println(indent + ANSI_BOLD + ANSI_CYAN + "+------------------------------+" + ANSI_RESET);
+    }
+
+    private void printActionConsidered(String action, int depth, boolean isMax) {
+        String indent = getIndent(depth + 1);
+        String color = isMax ? ANSI_GREEN : ANSI_RED;
+        System.out.println(indent + color + "> Trying action: " + formatAction(action) + ANSI_RESET);
+    }
+
+    private void printActionResult(String action, int score, int currentBest, int depth, boolean isMax) {
+        String indent = getIndent(depth + 1);
+        boolean isBetter = isMax ? (score > currentBest || currentBest == Integer.MIN_VALUE)
+                : (score < currentBest || currentBest == Integer.MAX_VALUE);
+        String resultColor = isBetter ? ANSI_YELLOW : ANSI_WHITE;
+        String symbol = isBetter ? "*" : "o";
+        System.out.println(indent + resultColor + "  " + symbol + " Result: " + score +
+                " (Current best: " + formatValue(currentBest) + ")" + ANSI_RESET);
+    }
+
+    private void printBestChoice(String action, int score, int depth, boolean isMax) {
+        if (action.isEmpty())
+            return;
+        String indent = getIndent(depth);
+        String color = isMax ? ANSI_GREEN : ANSI_RED;
+        System.out.println(indent + ANSI_BOLD + color + "[BEST] Move: " + formatAction(action) +
+                " -> Score: " + score + ANSI_RESET);
+    }
+
+    private void printTerminalNode(Node node, int utility, int depth) {
+        String indent = getIndent(depth);
+        System.out.println(indent + ANSI_BOLD + ANSI_PURPLE + "[!] TERMINAL NODE" + ANSI_RESET);
+        System.out.println(indent + ANSI_BOLD + ANSI_CYAN + "  Utility: " + utility + ANSI_RESET);
+        System.out.println(indent + ANSI_PURPLE + "  A Health: " + sum(node.h0) +
+                ", B Health: " + sum(node.h1) + ANSI_RESET);
+    }
+
+    private void printPruning(String cutoffType, int alpha, int beta, int value, int depth) {
+        String indent = getIndent(depth + 1);
+        System.out.println(indent + ANSI_BOLD + ANSI_RED + "[X] " + cutoffType + " CUT-OFF! " + ANSI_RESET);
+        System.out.println(indent + ANSI_RED + "  Pruned at value " + value +
+                " (a=" + formatValue(alpha) + ", b=" + formatValue(beta) + ")" + ANSI_RESET);
+    }
+
+    private void printAlphaBetaUpdate(String paramName, int alpha, int beta, int depth) {
+        String indent = getIndent(depth + 1);
+        System.out.println(indent + ANSI_YELLOW + "  Updated " + paramName + ": a=" +
+                formatValue(alpha) + ", b=" + formatValue(beta) + ANSI_RESET);
+    }
+
+    private void printFinalSummary(SearchResult result, boolean ab) {
+        System.out.println("\n" + ANSI_BOLD + ANSI_BG_WHITE + ANSI_BLUE +
+                "===============================================================" + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_GREEN + "           FINAL RESULT" + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_BG_WHITE + ANSI_BLUE +
+                "===============================================================" + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_YELLOW + "  Optimal Plan: " + ANSI_RESET +
+                ANSI_CYAN + formatPlan(result.plan) + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_YELLOW + "  Final Score: " + ANSI_RESET +
+                ANSI_GREEN + result.score + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_YELLOW + "  Nodes Expanded: " + ANSI_RESET +
+                ANSI_PURPLE + getNodesExpanded() + ANSI_RESET);
+        System.out.println(ANSI_BOLD + ANSI_BG_WHITE + ANSI_BLUE +
+                "===============================================================" + ANSI_RESET + "\n");
+    }
+
+    private String getIndent(int depth) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < depth; i++) {
+            sb.append("  | ");
+        }
+        return sb.toString();
+    }
+
+    private String formatAction(String action) {
+        if (action == null || action.isEmpty())
+            return "";
+        char team = action.charAt(0);
+        String color = team == 'A' ? ANSI_GREEN : ANSI_RED;
+        return color + ANSI_BOLD + action + ANSI_RESET;
+    }
+
+    private String formatPlan(String plan) {
+        if (plan == null || plan.isEmpty())
+            return "(no moves)";
+        String[] moves = plan.split("-");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < moves.length; i++) {
+            if (i > 0)
+                sb.append(" -> ");
+            sb.append(formatAction(moves[i]));
+        }
+        return sb.toString();
+    }
+
+    private String formatValue(int value) {
+        if (value == Integer.MIN_VALUE)
+            return "-INF";
+        if (value == Integer.MAX_VALUE)
+            return "+INF";
+        return String.valueOf(value);
     }
 
     // Applies an action string to a node and returns a new child node with updated
