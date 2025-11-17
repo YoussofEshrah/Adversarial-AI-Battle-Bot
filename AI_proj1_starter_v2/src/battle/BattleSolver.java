@@ -3,6 +3,7 @@ package battle;
 public class BattleSolver {
 
     public Node initialNode; // this attribute MUST be used to store the initial node in the search tree
+    private long nodesExpanded = 0L;
 
     public String solve(String initialStateString, boolean ab, boolean visualize) {
         // TODO: implement this function
@@ -158,6 +159,75 @@ public class BattleSolver {
         for (int v : a)
             s += v;
         return s;
+    }
+
+    private void resetNodesExpanded() {
+        nodesExpanded = 0L;
+    }
+
+    private void countExpansion() {
+        nodesExpanded++;
+    }
+
+    private long getNodesExpanded() {
+        return nodesExpanded;
+    }
+
+    private static class SearchResult {
+        final int score;
+        final String plan; // hyphen-separated action sequence
+
+        SearchResult(int score, String plan) {
+            this.score = score;
+            this.plan = plan == null ? "" : plan;
+        }
+    }
+
+    // Minimax with plan reconstruction. isMax should be true when it's A's turn.
+    private SearchResult minimax(Node node, boolean isMax) {
+        // Count every node visit as an expansion
+        countExpansion();
+
+        if (isTerminal(node)) {
+            return new SearchResult(utility(node), "");
+        }
+
+        java.util.List<String> actions = generateActions(node);
+        if (actions.isEmpty()) {
+            // Defensive fallback; ideally terminal would have been true/ possible in
+            // stalemates like in chess if they exist
+            return new SearchResult(utility(node), "");
+        }
+
+        if (isMax) {
+            int bestScore = Integer.MIN_VALUE;
+            String bestPlan = "";
+            for (String a : actions) {
+                Node child = result(node, a);
+                if (child == null)
+                    continue; // should not happen with valid actions, but just in case it happens, we skip
+                SearchResult r = minimax(child, false); // recursive call
+                if (r.score > bestScore) {
+                    bestScore = r.score;
+                    bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                }
+            }
+            return new SearchResult(bestScore, bestPlan);
+        } else {
+            int bestScore = Integer.MAX_VALUE;
+            String bestPlan = "";
+            for (String a : actions) {
+                Node child = result(node, a);
+                if (child == null)
+                    continue;
+                SearchResult r = minimax(child, true);
+                if (r.score < bestScore) {
+                    bestScore = r.score;
+                    bestPlan = a + (r.plan.isEmpty() ? "" : ("-" + r.plan));
+                }
+            }
+            return new SearchResult(bestScore, bestPlan);
+        }
     }
 
     // Applies an action string to a node and returns a new child node with updated
