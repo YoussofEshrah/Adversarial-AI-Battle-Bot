@@ -8,7 +8,6 @@ public class BattleSolver {
     public String solve(String initialStateString, boolean ab, boolean visualize) {
         String sol = "";
 
-        // Minimax implementation
         ParsedState ps = parseInitialState(initialStateString);
         initialNode = new Node(ps.h0, ps.d0, ps.h1, ps.d1, ps.turn);
 
