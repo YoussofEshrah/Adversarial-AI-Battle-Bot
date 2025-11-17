@@ -6,9 +6,20 @@ public class BattleSolver {
     private long nodesExpanded = 0L;
 
     public String solve(String initialStateString, boolean ab, boolean visualize) {
-        // TODO: implement this function
-
         String sol = "";
+
+        // Minimax implementation
+        ParsedState ps = parseInitialState(initialStateString);
+        initialNode = new Node(ps.h0, ps.d0, ps.h1, ps.d1, ps.turn);
+
+        resetNodesExpanded();
+        SearchResult result = minimax(initialNode, ps.turn == 'A');
+
+        String plan = result.plan.replaceAll("-", ",");
+        String score = Integer.toString(result.score);
+        String nodesExp = Long.toString(getNodesExpanded());
+
+        sol = plan + ";" + score + ";" + nodesExp;
         return sol;
 
     }

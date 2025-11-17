@@ -1,6 +1,6 @@
 
 These are ordered chronoligically and not by value/Magnitude
-**TAKE CARE TO NOT SET ALPHA NAD BETA AS 0.1
+**TAKE CARE TO NOT SET ALPHA AND BETA AS 0.1
 
 1) Parse input state string
 - Read `initialStateString` into `int[] h0,d0,h1,d1` and `char turn`.
