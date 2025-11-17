@@ -18,7 +18,6 @@ public class BattleSolver {
     private static final String ANSI_WHITE = "\u001B[37m";
     private static final String ANSI_BOLD = "\u001B[1m";
     private static final String ANSI_BG_WHITE = "\u001B[47m";
-    private static final String ANSI_BG_BLACK = "\u001B[40m";
 
     public String solve(String initialStateString, boolean ab, boolean visualize) {
         String sol = "";
