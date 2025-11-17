@@ -642,12 +642,15 @@ public class BattleSolver {
     // Returns all legal action strings for the given node in order.
     // Format: "A(i,j)" if node.turn=='A', else "B(i,j)".
     // Only include attackers with health>0 and targets with health>0.
+    // Actions are sorted to favor highest damage attackers targeting lowest health
+    // defenders.
     public static java.util.List<String> generateActions(Node node) {
         java.util.List<String> actions = new java.util.ArrayList<>();
         if (node == null)
             return actions;
         if (node.turn == 'A') {
-            if (node.h0 != null && node.h1 != null) { // h0 and h1 are the health arrays of both teams
+            if (node.h0 != null && node.h1 != null && node.d0 != null) { // h0 and h1 are the health arrays of both
+                                                                         // teams
                 for (int i = 0; i < node.h0.length; i++) {
                     if (node.h0[i] > 0) {
                         for (int j = 0; j < node.h1.length; j++) {
@@ -657,9 +660,25 @@ public class BattleSolver {
                         }
                     }
                 }
+                // Sort actions: prioritize high damage attackers (descending) and low health
+                // targets (ascending)
+                actions.sort((a1, a2) -> {
+                    int attacker1 = extractAttackerIndex(a1);
+                    int target1 = extractTargetIndex(a1);
+                    int attacker2 = extractAttackerIndex(a2);
+                    int target2 = extractTargetIndex(a2);
+
+                    // First, compare by attacker damage (higher damage first)
+                    int dmgCompare = Integer.compare(node.d0[attacker2], node.d0[attacker1]);
+                    if (dmgCompare != 0)
+                        return dmgCompare;
+
+                    // Then, compare by target health (lower health first)
+                    return Integer.compare(node.h1[target1], node.h1[target2]);
+                });
             }
         } else if (node.turn == 'B') {
-            if (node.h1 != null && node.h0 != null) {
+            if (node.h1 != null && node.h0 != null && node.d1 != null) {
                 for (int i = 0; i < node.h1.length; i++) {
                     if (node.h1[i] > 0) {
                         for (int j = 0; j < node.h0.length; j++) {
@@ -669,10 +688,40 @@ public class BattleSolver {
                         }
                     }
                 }
+                // Sort actions: prioritize high damage attackers (descending) and low health
+                // targets (ascending)
+                actions.sort((a1, a2) -> {
+                    int attacker1 = extractAttackerIndex(a1);
+                    int target1 = extractTargetIndex(a1);
+                    int attacker2 = extractAttackerIndex(a2);
+                    int target2 = extractTargetIndex(a2);
+
+                    // First, compare by attacker damage (higher damage first)
+                    int dmgCompare = Integer.compare(node.d1[attacker2], node.d1[attacker1]);
+                    if (dmgCompare != 0)
+                        return dmgCompare;
+
+                    // Then, compare by target health (lower health first)
+                    return Integer.compare(node.h0[target1], node.h0[target2]);
+                });
             }
         }
         return actions; // example return will look like: ["A(0,0)", "A(0,1)", ...] - unit 0 of team A
                         // can attack unit 0 or 1 of team B and so on
+    }
+
+    // Helper method to extract attacker index from action string "X(i,j)"
+    private static int extractAttackerIndex(String action) {
+        int l = action.indexOf('(');
+        int comma = action.indexOf(',');
+        return Integer.parseInt(action.substring(l + 1, comma));
+    }
+
+    // Helper method to extract target index from action string "X(i,j)"
+    private static int extractTargetIndex(String action) {
+        int comma = action.indexOf(',');
+        int r = action.indexOf(')');
+        return Integer.parseInt(action.substring(comma + 1, r));
     }
 
 }
